@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, Zap, AlertTriangle, ShieldCheck, Server, Thermometer, Wifi } from 'lucide-react';
+import './App.css'; // Importing the updated CSS
 
 // ================= CONFIGURATION =================
 // SECURE WebSocket URL for Render (wss://)
