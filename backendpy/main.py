@@ -98,7 +98,7 @@ class DatabaseManager:
         energy = data.get("energy")
         pf = data.get("pf")
         
-        # Frequency is now expected from both, but we use .get() to be safe
+        # Frequency is now expected from both
         frequency = data.get("frequency") 
         
         # Temperature is House specific
