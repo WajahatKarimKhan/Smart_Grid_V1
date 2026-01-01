@@ -31,6 +31,42 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SmartGridx")
 
+# ================= STATE MANAGEMENT (Global) =================
+# We store the latest values here. 
+# When we save to DB, we dump this entire object to ensure "Both in one row".
+system_state = {
+    "pole": {
+        "connected": False,
+        "node_id": "Grid_Pole_Master",
+        "power": 0.0,
+        "voltage": 0.0,
+        "current": 0.0,
+        "energy": 0.0,
+        "pf": 0.0,
+        "frequency": 0.0,
+        "last_seen": None
+    },
+    "house": {
+        "connected": False,
+        "node_id": "House_Unit_1",
+        "power": 0.0,
+        "voltage": 0.0,
+        "current": 0.0,
+        "energy": 0.0,
+        "temperature": 25.0,
+        "frequency": 0.0, 
+        "relays": [False, False, False, False],
+        "pf": 0.0,
+        "last_seen": None
+    },
+    "alerts": {
+        "theft_detected": False,
+        "maintenance_risk": False,
+        "risk_score": 0.0,
+        "message": "System Normal"
+    }
+}
+
 # ================= DATABASE MANAGER =================
 class DatabaseManager:
     def __init__(self):
@@ -46,114 +82,88 @@ class DatabaseManager:
             logger.error(f"Database connection failed: {e}")
 
     async def disconnect(self):
-        """Close the connection pool"""
         if self.pool:
             await self.pool.close()
             logger.info("Disconnected from NeonDB")
 
     async def create_table(self):
         """
-        Creates the unified table.
-        Frequency is now a standard column for both.
-        Temperature is nullable (House only).
+        Creates a WIDE table to store snapshots.
+        Columns are ordered: Pole Data -> House Data.
         """
         query = """
-        CREATE TABLE IF NOT EXISTS sensor_readings (
+        CREATE TABLE IF NOT EXISTS grid_snapshots (
             id SERIAL PRIMARY KEY,
             timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-            node_id VARCHAR(50),
+            trigger_source VARCHAR(20), -- Which device caused this update ('pole' or 'house')
             
-            -- Sensor Data Columns
-            voltage REAL,
-            current REAL,
-            power REAL,
-            energy REAL,
-            frequency REAL,    -- Sent by BOTH Pole and House
-            pf REAL,
-            temperature REAL   -- Sent by House ONLY (NULL for Pole)
+            -- POLE MODULE DATA (First, as requested)
+            pole_id VARCHAR(50),
+            pole_voltage REAL,
+            pole_current REAL,
+            pole_power REAL,
+            pole_energy REAL,
+            pole_frequency REAL,
+            pole_pf REAL,
+            
+            -- INDOOR/HOUSE MODULE DATA (Second)
+            house_id VARCHAR(50),
+            house_voltage REAL,
+            house_current REAL,
+            house_power REAL,
+            house_energy REAL,
+            house_frequency REAL,
+            house_pf REAL,
+            house_temperature REAL
         );
         """
         async with self.pool.acquire() as connection:
             await connection.execute(query)
-            logger.info("Table 'sensor_readings' checked/created.")
+            logger.info("Table 'grid_snapshots' checked/created.")
 
-    async def insert_reading(self, node_id: str, data: dict):
+    async def save_snapshot(self, source: str):
         """
-        Inserts data into the database. 
-        Handles missing keys gracefully (sets them to None/NULL).
+        Saves the CURRENT global state of both Pole and House into one row.
         """
         if not self.pool:
             return
 
         query = """
-        INSERT INTO sensor_readings 
-        (node_id, voltage, current, power, energy, frequency, pf, temperature)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO grid_snapshots (
+            trigger_source,
+            pole_id, pole_voltage, pole_current, pole_power, pole_energy, pole_frequency, pole_pf,
+            house_id, house_voltage, house_current, house_power, house_energy, house_frequency, house_pf, house_temperature
+        ) VALUES (
+            $1,
+            $2, $3, $4, $5, $6, $7, $8,
+            $9, $10, $11, $12, $13, $14, $15, $16
+        )
         """
         
-        # Safe extraction: defaults to None if the sensor didn't send it
-        voltage = data.get("voltage")
-        current = data.get("current")
-        power = data.get("power")
-        energy = data.get("energy")
-        pf = data.get("pf")
-        
-        # Frequency is now expected from both
-        frequency = data.get("frequency") 
-        
-        # Temperature is House specific
-        temperature = data.get("temperature") 
+        # Get latest data from memory
+        pole = system_state["pole"]
+        house = system_state["house"]
 
         try:
             async with self.pool.acquire() as connection:
                 await connection.execute(
-                    query, 
-                    node_id, voltage, current, power, energy, frequency, pf, temperature
+                    query,
+                    source,
+                    # Pole Values
+                    pole.get("node_id"), pole["voltage"], pole["current"], pole["power"], pole["energy"], pole["frequency"], pole["pf"],
+                    # House Values
+                    house.get("node_id"), house["voltage"], house["current"], house["power"], house["energy"], house["frequency"], house["pf"], house["temperature"]
                 )
-                logger.info(f"DB Saved: {node_id} | Freq: {frequency} | Temp: {temperature}")
+                logger.info(f"Snapshot saved. Trigger: {source}")
         except Exception as e:
-            logger.error(f"Failed to insert data: {e}")
+            logger.error(f"Failed to insert snapshot: {e}")
 
 db_manager = DatabaseManager()
-
-# ================= STATE MANAGEMENT =================
-system_state = {
-    "pole": {
-        "connected": False,
-        "power": 0.0,
-        "voltage": 0.0,
-        "current": 0.0,
-        "energy": 0.0,
-        "pf": 0.0,
-        "frequency": 0.0,
-        "last_seen": None
-    },
-    "house": {
-        "connected": False,
-        "power": 0.0,
-        "voltage": 0.0,
-        "current": 0.0,
-        "energy": 0.0,
-        "temperature": 25.0,
-        "frequency": 0.0,  # Added to state
-        "relays": [False, False, False, False],
-        "pf": 0.0,
-        "last_seen": None
-    },
-    "alerts": {
-        "theft_detected": False,
-        "maintenance_risk": False,
-        "risk_score": 0.0,
-        "message": "System Normal"
-    }
-}
 
 # ================= LOGIC & CALCULATIONS =================
 def update_system_logic():
     """
-    Run centralized logic:
-    1. Compare Pole vs House power (Theft Detection)
-    2. Analyze PF and Fluctuations (Predictive Maintenance)
+    Run centralized logic: Theft Detection & Maintenance
     """
     pole = system_state["pole"]
     house = system_state["house"]
@@ -169,17 +179,15 @@ def update_system_logic():
             alerts["theft_detected"] = False
             alerts["message"] = "System Optimal"
     
-    # 2. Predictive Maintenance (PF Check)
+    # 2. Predictive Maintenance
     risk_score = 0.0
-    if pole["pf"] > 0 and pole["pf"] < 0.85:
-        risk_score += 0.4
-    if house["pf"] > 0 and house["pf"] < 0.85:
-        risk_score += 0.3
+    if pole["pf"] > 0 and pole["pf"] < 0.85: risk_score += 0.4
+    if house["pf"] > 0 and house["pf"] < 0.85: risk_score += 0.3
         
     alerts["risk_score"] = min(risk_score, 1.0)
     alerts["maintenance_risk"] = risk_score > 0.6
     
-    if alerts["maintenance_risk"]:
+    if alerts["maintenance_risk"] and not alerts["theft_detected"]:
         alerts["message"] = "MAINTENANCE ALERT: High Grid Instability"
 
 # ================= WEBSOCKET MANAGER =================
@@ -249,45 +257,39 @@ async def websocket_hardware(websocket: WebSocket, device_type: str):
             data = await websocket.receive_text()
             payload = json.loads(data)
             
-            # --- DATABASE SAVE LOGIC ---
-            db_data = {}
-            
+            # --- UPDATE STATE BASED ON DEVICE ---
             if device_type == "pole":
-                # Pole Data Update
-                # Pole sends flat JSON structure
                 system_state["pole"].update({
+                    "node_id": payload.get("node_id", "Grid_Pole"),
                     "voltage": payload.get("voltage", 0),
                     "current": payload.get("current", 0),
                     "power": payload.get("power", 0),
                     "energy": payload.get("energy", 0),
-                    "frequency": payload.get("frequency", 50), # Expecting frequency here
+                    "frequency": payload.get("frequency", 50),
                     "pf": payload.get("pf", 0),
                     "last_seen": datetime.now().isoformat()
                 })
-                db_data = payload 
                 
             elif device_type == "house":
-                # House Data Update
-                # House sends nested structure: { "sensors": {...}, "relays": [...] }
                 sensors = payload.get("sensors", {})
                 relays = payload.get("relays", [False, False, False, False])
                 
                 system_state["house"].update({
+                    "node_id": payload.get("node_id", "House_Node"),
                     "voltage": sensors.get("voltage", 0),
                     "current": sensors.get("current", 0),
                     "power": sensors.get("power", 0),
                     "energy": sensors.get("energy", 0),
                     "temperature": sensors.get("temperature", 25),
-                    "frequency": sensors.get("frequency", 50), # Ensure Indoor Code sends this!
+                    "frequency": sensors.get("frequency", 50),
                     "pf": sensors.get("pf", 0),
                     "relays": relays,
                     "last_seen": datetime.now().isoformat()
                 })
-                db_data = sensors # Pass the sensors object to DB
             
-            # Async Insert to Database
-            # This runs in background so it doesn't slow down the websocket
-            asyncio.create_task(db_manager.insert_reading(device_type, db_data))
+            # --- SAVE SNAPSHOT TO DATABASE ---
+            # This inserts ONE row containing BOTH Pole and House data
+            asyncio.create_task(db_manager.save_snapshot(device_type))
 
             update_system_logic()
             await manager.broadcast_state()
