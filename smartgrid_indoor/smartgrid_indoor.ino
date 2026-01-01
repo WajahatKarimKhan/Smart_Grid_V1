@@ -73,6 +73,7 @@ void sendDataAndState() {
   float i = pzem.current();
   float p = pzem.power();
   float e = pzem.energy();
+  float freq = pzem.frequency();
   float pf = pzem.pf();
   float temp = dht.readTemperature(); 
 
@@ -88,6 +89,7 @@ void sendDataAndState() {
   sensors["current"] = i;
   sensors["power"] = p;
   sensors["energy"] = e;
+  sensors["frequency"] = freq;
   sensors["pf"] = pf;
   sensors["temperature"] = temp;
 
