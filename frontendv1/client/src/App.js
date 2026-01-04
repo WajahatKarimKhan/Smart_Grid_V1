@@ -25,9 +25,9 @@ const defaultSystemData = {
 const styles = `
 /* --- Global Variables & Resets --- */
 :root {
-  --bg-color: #f8fafc;
+  --bg-color: #f1f5f9;
   --card-bg: #ffffff;
-  --text-primary: #0f172a;
+  --text-primary: #1e293b;
   --text-secondary: #64748b;
   --border-color: #e2e8f0;
    
@@ -51,7 +51,7 @@ body {
 
 /* --- Layout --- */
 .dashboard-container {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -60,9 +60,9 @@ body {
 .app-header {
   background: var(--card-bg);
   padding: 1.25rem 2rem;
-  border-radius: 16px;
+  border-radius: 20px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -71,15 +71,15 @@ body {
 
 .header-brand { display: flex; align-items: center; gap: 1rem; }
 .brand-icon-wrapper {
-  background: var(--text-primary);
+  background: linear-gradient(135deg, #1e293b, #0f172a);
   color: white;
   padding: 10px;
   border-radius: 12px;
   display: flex;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
 }
-.brand-text h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin:0; letter-spacing: -0.5px; }
-.brand-text p { font-size: 0.875rem; color: var(--text-secondary); margin:0; }
+.brand-text h1 { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin:0; letter-spacing: -0.5px; }
+.brand-text p { font-size: 0.875rem; color: var(--text-secondary); margin:0; font-weight: 500; }
 
 .header-status { display: flex; gap: 1rem; align-items: center; }
 .status-pill { 
@@ -88,72 +88,82 @@ body {
     gap: 8px; 
     font-size: 0.85rem; 
     font-weight: 600; 
-    padding: 6px 12px;
-    border-radius: 20px;
+    padding: 8px 16px;
+    border-radius: 99px;
     border: 1px solid transparent;
+    transition: all 0.2s;
 }
 .status-pill.online { background: #ecfdf5; color: var(--accent-green); border-color: #a7f3d0; }
-.status-pill.offline { background: #f1f5f9; color: var(--text-secondary); border-color: #cbd5e1; }
+.status-pill.offline { background: #f8fafc; color: var(--text-secondary); border-color: #cbd5e1; }
 
 /* --- Alerts --- */
 .alerts-container { margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem; }
 .alert-banner {
   padding: 1rem 1.5rem;
-  border-radius: 12px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   gap: 1rem;
   animation: slideDown 0.3s ease-out;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 .alert-banner.danger { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; }
 .alert-banner.warning { background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; }
 .alert-icon-bg { padding: 8px; border-radius: 50%; background: rgba(255,255,255,0.8); }
-.alert-content { display: flex; flex-direction: column; font-size: 0.95rem; }
+.alert-content { display: flex; flex-direction: column; font-size: 0.95rem; font-weight: 500; }
 
 /* --- Main Grid --- */
 .main-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
+  align-items: start;
 }
 @media (min-width: 1024px) {
   .main-grid { grid-template-columns: 1fr 1fr; }
 }
 
+/* --- Section Containers --- */
+.panel-section {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 1.5rem;
+}
+
 /* --- Section Headers --- */
-.section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; }
-.section-icon { color: var(--text-secondary); opacity: 0.7; }
-.section-header h2 { font-size: 1.125rem; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+.section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 0.5rem; }
+.section-icon { color: var(--text-secondary); opacity: 0.8; }
+.section-header h2 { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
 
 /* --- Stats Cards --- */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1rem;
-  margin-bottom: 2rem;
 }
 
 .stat-card {
   background: var(--card-bg);
   padding: 1.25rem;
-  border-radius: 16px;
+  border-radius: 20px;
   border: 1px solid var(--border-color);
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
   transition: all 0.2s ease;
+  min-height: 110px;
 }
-.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border-color: #cbd5e1; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); border-color: #cbd5e1; }
 
 .stat-top { display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem; }
-.stat-label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); }
-.stat-value-wrapper { display: flex; align-items: baseline; gap: 2px; }
-.stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-.stat-unit { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+.stat-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value-wrapper { display: flex; align-items: baseline; gap: 3px; }
+.stat-value { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+.stat-unit { font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; }
 
 .icon-badge { padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 .icon-badge.amber { background: #fffbeb; color: var(--accent-amber); }
@@ -163,58 +173,65 @@ body {
 .icon-badge.red { background: #fef2f2; color: var(--accent-red); }
 .icon-badge.orange { background: #fff7ed; color: var(--accent-orange); }
 
-/* --- Card Containers --- */
+/* --- Card Containers (Relay & AI) --- */
 .card-container {
   background: var(--card-bg);
   padding: 1.5rem;
-  border-radius: 20px;
+  border-radius: 24px;
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-  height: 100%;
+  height: 100%; /* Fill available height */
+  display: flex;
+  flex-direction: column;
 }
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-.card-title { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+.card-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
 
-/* --- Relay Buttons (Improved UI) --- */
+/* --- Relay Buttons (Refined) --- */
 .relay-grid { 
     display: grid; 
     grid-template-columns: repeat(2, 1fr); 
     gap: 1.25rem; 
+    flex-grow: 1; /* Expand to fill space */
 }
 
 .relay-btn {
-  background: linear-gradient(145deg, #ffffff, #f1f5f9);
+  background: #f8fafc;
   border: 1px solid var(--border-color);
-  padding: 1.25rem 1.5rem;
+  padding: 1.25rem;
   border-radius: 16px;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.5);
+  align-items: flex-start;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  min-height: 100px;
 }
 
 .relay-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8);
     border-color: #cbd5e1;
+    background: #f1f5f9;
 }
 
 .relay-btn.active { 
-    background: linear-gradient(145deg, #3b82f6, #2563eb);
-    border-color: #2563eb;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3), inset 0 2px 0 rgba(255,255,255,0.2);
+    background: #ffffff;
+    border-color: var(--accent-blue);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+.relay-btn.active .relay-toggle {
+    background: var(--accent-blue);
+}
+.relay-btn.active .relay-toggle::after {
+    transform: translateX(20px);
 }
 
-.relay-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.relay-top { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .relay-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-.relay-btn.active .relay-label { color: rgba(255,255,255,0.7); }
 .relay-name { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
-.relay-btn.active .relay-name { color: white; }
 
-/* The Toggle Switch Visual */
+/* Switch Graphic */
 .relay-toggle {
     width: 44px;
     height: 24px;
@@ -222,7 +239,6 @@ body {
     border-radius: 99px;
     position: relative;
     transition: background 0.3s ease;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
 .relay-toggle::after {
     content: '';
@@ -233,28 +249,36 @@ body {
     height: 20px;
     background: white;
     border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.relay-btn.active .relay-toggle { background: rgba(0,0,0,0.2); }
-.relay-btn.active .relay-toggle::after { transform: translateX(20px); background: white; }
-
-/* --- AI Health Monitor Card (Improved) --- */
+/* --- AI Health Monitor Card (Refined) --- */
 .ai-card { 
-    background: linear-gradient(145deg, #1e293b, #0f172a); 
+    background: radial-gradient(circle at top right, #1e293b, #0f172a); 
     color: white; 
     border: 1px solid #334155; 
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
 } 
-.ai-card h3 { color: white; font-size: 1.1rem; }
+/* Subtle pattern overlay */
+.ai-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+}
 
-.ai-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-.ai-badge { font-size: 0.75rem; padding: 6px 10px; border-radius: 8px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid transparent; }
-.ai-badge.good { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.2); }
-.ai-badge.bad { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+.ai-card h3 { color: white; font-size: 1.1rem; font-weight: 600; position: relative; z-index: 1; }
+
+.ai-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; position: relative; z-index: 1; }
+.ai-badge { font-size: 0.75rem; padding: 6px 12px; border-radius: 99px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid transparent; }
+.ai-badge.good { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+.ai-badge.bad { background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
+
+.ai-body { position: relative; z-index: 1; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
 
 .ai-stats-row {
     display: flex;
@@ -264,27 +288,28 @@ body {
 }
 
 .risk-metric { display: flex; flex-direction: column; }
-.risk-score { font-size: 3.5rem; font-weight: 800; color: white; line-height: 1; letter-spacing: -2px; }
-.risk-label { font-size: 0.85rem; color: #94a3b8; font-weight: 500; margin-top: 4px; }
+.risk-score { font-size: 4rem; font-weight: 800; color: white; line-height: 1; letter-spacing: -3px; text-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.risk-label { font-size: 0.85rem; color: #94a3b8; font-weight: 500; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
 
 .temp-metric { 
     display: flex; 
     flex-direction: column;
     align-items: flex-end; 
-    gap: 6px; 
-    background: rgba(255,255,255,0.03); 
-    padding: 12px; 
-    border-radius: 14px; 
+    gap: 8px; 
+    background: rgba(255,255,255,0.05); 
+    padding: 16px; 
+    border-radius: 16px; 
     border: 1px solid rgba(255,255,255,0.05);
+    backdrop-filter: blur(5px);
 }
-.temp-value { font-size: 1.5rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 6px; }
-.temp-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+.temp-value { font-size: 1.75rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px; line-height: 1; }
+.temp-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
 
-.ai-footer { margin-top: auto; }
+.ai-footer { margin-top: 1.5rem; }
 .ai-message { color: #cbd5e1; font-size: 0.95rem; margin-bottom: 1rem; line-height: 1.5; font-weight: 400; opacity: 0.9; }
 
-.ai-progress-track { background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; }
-.ai-progress-fill { height: 100%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.ai-progress-track { background: rgba(255,255,255,0.1); height: 6px; border-radius: 99px; overflow: hidden; }
+.ai-progress-fill { height: 100%; border-radius: 99px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 .ai-progress-fill.good { background: #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
 .ai-progress-fill.bad { background: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
 `;
@@ -305,17 +330,17 @@ const StatCard = ({ label, value, unit, icon: Icon, colorClass }) => (
   </div>
 );
 
-// --- Helper Component: Relay Button (Updated) ---
+// --- Helper Component: Relay Button (Refined) ---
 const RelayButton = ({ index, state, onClick }) => (
   <button 
     onClick={() => onClick(index, !state)} 
     className={`relay-btn ${state ? 'active' : ''}`}
   >
-    <div className="relay-info">
+    <div className="relay-top">
       <span className="relay-label">Circuit {index + 1}</span>
-      <span className="relay-name">Button {index + 1}</span>
+      <div className="relay-toggle"></div>
     </div>
-    <div className="relay-toggle"></div>
+    <span className="relay-name">Button {index + 1}</span>
   </button>
 );
 
@@ -426,7 +451,7 @@ const App = () => {
             <StatCard label="Power Factor" value={(pole.pf || 0).toFixed(2)} unit="" icon={ShieldCheck} colorClass="purple" />
           </div>
 
-          {/* RELAY CONTROL (Moved Here) */}
+          {/* RELAY CONTROL (Stretches to fill vertical space) */}
           <div className="card-container relay-container">
             <div className="card-header">
                 <div className="card-title">Circuit Control</div>
@@ -455,7 +480,7 @@ const App = () => {
             <StatCard label="Power Factor" value={(house.pf || 0).toFixed(2)} unit="" icon={ShieldCheck} colorClass="purple" />
           </div>
 
-          {/* AI HEALTH MONITOR (Adjusted Here) */}
+          {/* AI HEALTH MONITOR (Stretches to fill vertical space) */}
           <div className="card-container ai-card">
               <div className="ai-header-row">
                   <h3>AI Health Monitor</h3>
@@ -469,14 +494,16 @@ const App = () => {
                     {/* Risk Score */}
                     <div className="risk-metric">
                         <span className="risk-score">{(alerts.risk_score || 0).toFixed(2)}</span>
-                        <span className="risk-label">Failure Probability</span>
+                        <span className="risk-label">
+                            <Activity size={14} /> Failure Probability
+                        </span>
                     </div>
 
                     {/* Temperature */}
                     <div className="temp-metric">
                         <span className="temp-label">Panel Temp</span>
                         <span className="temp-value">
-                            <Thermometer size={18} className={house.temperature > 40 ? "text-red-400" : "text-emerald-400"} />
+                            <Thermometer size={24} className={house.temperature > 40 ? "text-red-400" : "text-emerald-400"} />
                             {(house.temperature || 0).toFixed(1)}°C
                         </span>
                     </div>
