@@ -10,9 +10,8 @@ import {
   Home,
   Clock,
   Battery,
-  ToggleLeft
+  Power
 } from 'lucide-react';
-import './App.css'; 
 
 const WS_URL = "wss://smartgridxbackend.onrender.com/ws/client"; 
 
@@ -22,35 +21,301 @@ const defaultSystemData = {
   alerts: { theft_detected: false, maintenance_risk: false, risk_score: 0, message: "Waiting for connection..." }
 };
 
+// --- CSS Styles ---
+const styles = `
+/* --- Global Variables & Resets --- */
+:root {
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+   
+  --accent-amber: #f59e0b;
+  --accent-purple: #8b5cf6;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-orange: #f97316;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Layout --- */
+.dashboard-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* --- Header --- */
+.app-header {
+  background: var(--card-bg);
+  padding: 1.25rem 2rem;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header-brand { display: flex; align-items: center; gap: 1rem; }
+.brand-icon-wrapper {
+  background: var(--text-primary);
+  color: white;
+  padding: 10px;
+  border-radius: 12px;
+  display: flex;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+.brand-text h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin:0; letter-spacing: -0.5px; }
+.brand-text p { font-size: 0.875rem; color: var(--text-secondary); margin:0; }
+
+.header-status { display: flex; gap: 1rem; align-items: center; }
+.status-pill { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+}
+.status-pill.online { background: #ecfdf5; color: var(--accent-green); border-color: #a7f3d0; }
+.status-pill.offline { background: #f1f5f9; color: var(--text-secondary); border-color: #cbd5e1; }
+
+/* --- Alerts --- */
+.alerts-container { margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+.alert-banner {
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  animation: slideDown 0.3s ease-out;
+}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+.alert-banner.danger { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; }
+.alert-banner.warning { background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; }
+.alert-icon-bg { padding: 8px; border-radius: 50%; background: rgba(255,255,255,0.8); }
+.alert-content { display: flex; flex-direction: column; font-size: 0.95rem; }
+
+/* --- Main Grid --- */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+@media (min-width: 1024px) {
+  .main-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* --- Section Headers --- */
+.section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; }
+.section-icon { color: var(--text-secondary); opacity: 0.7; }
+.section-header h2 { font-size: 1.125rem; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+
+/* --- Stats Cards --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  transition: all 0.2s ease;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border-color: #cbd5e1; }
+
+.stat-top { display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem; }
+.stat-label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); }
+.stat-value-wrapper { display: flex; align-items: baseline; gap: 2px; }
+.stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+.stat-unit { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+
+.icon-badge { padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.icon-badge.amber { background: #fffbeb; color: var(--accent-amber); }
+.icon-badge.purple { background: #f3e8ff; color: var(--accent-purple); }
+.icon-badge.blue { background: #eff6ff; color: var(--accent-blue); }
+.icon-badge.green { background: #ecfdf5; color: var(--accent-green); }
+.icon-badge.red { background: #fef2f2; color: var(--accent-red); }
+.icon-badge.orange { background: #fff7ed; color: var(--accent-orange); }
+
+/* --- Card Containers --- */
+.card-container {
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+  height: 100%;
+}
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.card-title { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+
+/* --- Relay Buttons (Improved UI) --- */
+.relay-grid { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 1.25rem; 
+}
+
+.relay-btn {
+  background: linear-gradient(145deg, #ffffff, #f1f5f9);
+  border: 1px solid var(--border-color);
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.5);
+  position: relative;
+}
+
+.relay-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8);
+    border-color: #cbd5e1;
+}
+
+.relay-btn.active { 
+    background: linear-gradient(145deg, #3b82f6, #2563eb);
+    border-color: #2563eb;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3), inset 0 2px 0 rgba(255,255,255,0.2);
+}
+
+.relay-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.relay-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.relay-btn.active .relay-label { color: rgba(255,255,255,0.7); }
+.relay-name { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.relay-btn.active .relay-name { color: white; }
+
+/* The Toggle Switch Visual */
+.relay-toggle {
+    width: 44px;
+    height: 24px;
+    background: #cbd5e1;
+    border-radius: 99px;
+    position: relative;
+    transition: background 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.relay-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.relay-btn.active .relay-toggle { background: rgba(0,0,0,0.2); }
+.relay-btn.active .relay-toggle::after { transform: translateX(20px); background: white; }
+
+/* --- AI Health Monitor Card (Improved) --- */
+.ai-card { 
+    background: linear-gradient(145deg, #1e293b, #0f172a); 
+    color: white; 
+    border: 1px solid #334155; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+} 
+.ai-card h3 { color: white; font-size: 1.1rem; }
+
+.ai-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.ai-badge { font-size: 0.75rem; padding: 6px 10px; border-radius: 8px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid transparent; }
+.ai-badge.good { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.2); }
+.ai-badge.bad { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+
+.ai-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+}
+
+.risk-metric { display: flex; flex-direction: column; }
+.risk-score { font-size: 3.5rem; font-weight: 800; color: white; line-height: 1; letter-spacing: -2px; }
+.risk-label { font-size: 0.85rem; color: #94a3b8; font-weight: 500; margin-top: 4px; }
+
+.temp-metric { 
+    display: flex; 
+    flex-direction: column;
+    align-items: flex-end; 
+    gap: 6px; 
+    background: rgba(255,255,255,0.03); 
+    padding: 12px; 
+    border-radius: 14px; 
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.temp-value { font-size: 1.5rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 6px; }
+.temp-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.ai-footer { margin-top: auto; }
+.ai-message { color: #cbd5e1; font-size: 0.95rem; margin-bottom: 1rem; line-height: 1.5; font-weight: 400; opacity: 0.9; }
+
+.ai-progress-track { background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; }
+.ai-progress-fill { height: 100%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.ai-progress-fill.good { background: #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+.ai-progress-fill.bad { background: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+`;
+
 // --- Helper Component: Stat Card ---
 const StatCard = ({ label, value, unit, icon: Icon, colorClass }) => (
   <div className="stat-card">
-    <div className="stat-content">
-      <p className="stat-label">{label}</p>
-      <div className="stat-value-wrapper">
-        <span className="stat-value">{value}</span>
-        <span className="stat-unit">{unit}</span>
-      </div>
+    <div className="stat-top">
+        <div className={`icon-badge ${colorClass}`}>
+            <Icon size={18} />
+        </div>
+        <p className="stat-label">{label}</p>
     </div>
-    <div className={`icon-badge ${colorClass}`}>
-      <Icon size={20} />
+    <div className="stat-value-wrapper">
+      <span className="stat-value">{value}</span>
+      <span className="stat-unit">{unit}</span>
     </div>
   </div>
 );
 
-// --- Helper Component: Relay Button ---
+// --- Helper Component: Relay Button (Updated) ---
 const RelayButton = ({ index, state, onClick }) => (
   <button 
     onClick={() => onClick(index, !state)} 
     className={`relay-btn ${state ? 'active' : ''}`}
   >
     <div className="relay-info">
-      <div className={`relay-dot ${state ? 'on' : 'off'}`} />
+      <span className="relay-label">Circuit {index + 1}</span>
       <span className="relay-name">Button {index + 1}</span>
     </div>
-    <div className="relay-toggle-icon">
-       {state ? <Zap size={16} fill="currentColor" /> : <ToggleLeft size={16} />}
-    </div>
+    <div className="relay-toggle"></div>
   </button>
 );
 
@@ -83,7 +348,6 @@ const App = () => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ action: "set_relay", relay_index: index, state: newState }));
     } else {
-        // Optimistic update for UI feel if offline
         const newData = {...systemData};
         newData.house.relays[index] = newState;
         setSystemData(newData);
@@ -96,12 +360,13 @@ const App = () => {
 
   return (
     <div className="dashboard-container">
+      <style>{styles}</style>
       
       {/* --- HEADER --- */}
       <header className="app-header">
         <div className="header-brand">
           <div className="brand-icon-wrapper">
-            <Activity size={28} className="brand-icon" />
+            <Activity size={26} className="brand-icon" />
           </div>
           <div className="brand-text">
             <h1>Smart Gridx</h1>
@@ -110,12 +375,12 @@ const App = () => {
         </div>
 
         <div className="header-status">
-           <div className={`status-item ${pole.connected ? 'online' : 'offline'}`}>
-              <Wifi size={16} /> 
+           <div className={`status-pill ${pole.connected ? 'online' : 'offline'}`}>
+              <Wifi size={14} /> 
               <span>Grid: {pole.connected ? 'Online' : 'Offline'}</span>
            </div>
-           <div className={`status-item ${house.connected ? 'online' : 'offline'}`}>
-              <Server size={16} /> 
+           <div className={`status-pill ${house.connected ? 'online' : 'offline'}`}>
+              <Server size={14} /> 
               <span>SPAN: {house.connected ? 'Online' : 'Offline'}</span>
            </div>
         </div>
@@ -146,7 +411,7 @@ const App = () => {
       {/* --- MAIN GRID LAYOUT --- */}
       <main className="main-grid">
         
-        {/* --- LEFT COLUMN: POLE --- */}
+        {/* --- LEFT COLUMN: GRID SOURCE + RELAY CONTROL --- */}
         <section className="panel-section">
           <div className="section-header">
             <Zap className="section-icon" size={20} />
@@ -161,17 +426,21 @@ const App = () => {
             <StatCard label="Power Factor" value={(pole.pf || 0).toFixed(2)} unit="" icon={ShieldCheck} colorClass="purple" />
           </div>
 
-          {/* Moved AI Health Monitor Here or kept right? User said "below both of how the ai part" in previous prompt, 
-              but "shift back to previous UI" implies the structure in the provided code. 
-              The provided code had AI on the right. I will keep AI on the right to match the provided structure 
-              but ensure temperature is inside it. 
-              
-              Wait, standard 2-column layout usually balances better if I put something here since graph is gone.
-              However, strictly following "Grid Source" and "Smart Home" separation.
-          */}
+          {/* RELAY CONTROL (Moved Here) */}
+          <div className="card-container relay-container">
+            <div className="card-header">
+                <div className="card-title">Circuit Control</div>
+                <Power size={20} className="text-gray-400" />
+            </div>
+            <div className="relay-grid">
+              {(house.relays || [false, false, false, false]).map((state, idx) => (
+                <RelayButton key={idx} index={idx} state={state} onClick={toggleRelay} />
+              ))}
+            </div>
+          </div>
         </section>
 
-        {/* --- RIGHT COLUMN: HOUSE & AI --- */}
+        {/* --- RIGHT COLUMN: SMART HOME + AI MONITOR --- */}
         <section className="panel-section">
           <div className="section-header">
             <Server className="section-icon" size={20} />
@@ -186,17 +455,7 @@ const App = () => {
             <StatCard label="Power Factor" value={(house.pf || 0).toFixed(2)} unit="" icon={ShieldCheck} colorClass="purple" />
           </div>
 
-          {/* RELAY CONTROL */}
-          <div className="card-container relay-container">
-            <h3>Circuit Control</h3>
-            <div className="relay-grid">
-              {(house.relays || [false, false, false, false]).map((state, idx) => (
-                <RelayButton key={idx} index={idx} state={state} onClick={toggleRelay} />
-              ))}
-            </div>
-          </div>
-
-          {/* AI HEALTH MONITOR (Now with Temperature) */}
+          {/* AI HEALTH MONITOR (Adjusted Here) */}
           <div className="card-container ai-card">
               <div className="ai-header-row">
                   <h3>AI Health Monitor</h3>
@@ -213,23 +472,24 @@ const App = () => {
                         <span className="risk-label">Failure Probability</span>
                     </div>
 
-                    {/* Temperature Moved Here */}
+                    {/* Temperature */}
                     <div className="temp-metric">
-                        <Thermometer size={24} className={house.temperature > 40 ? "text-red-400" : "text-emerald-400"} />
-                        <div>
-                            <span className="temp-value">{(house.temperature || 0).toFixed(1)}°C</span>
-                            <span className="temp-label">Panel Temp</span>
-                        </div>
+                        <span className="temp-label">Panel Temp</span>
+                        <span className="temp-value">
+                            <Thermometer size={18} className={house.temperature > 40 ? "text-red-400" : "text-emerald-400"} />
+                            {(house.temperature || 0).toFixed(1)}°C
+                        </span>
                     </div>
                  </div>
 
-                 <p className="ai-message">{alerts.message}</p>
-                 
-                 <div className="ai-progress-track">
-                    <div 
-                        className={`ai-progress-fill ${alerts.maintenance_risk ? 'bad' : 'good'}`}
-                        style={{ width: `${Math.min((alerts.risk_score || 0) * 100, 100)}%` }}
-                    />
+                 <div className="ai-footer">
+                    <p className="ai-message">{alerts.message || "Monitoring system parameters for anomalies..."}</p>
+                    <div className="ai-progress-track">
+                        <div 
+                            className={`ai-progress-fill ${alerts.maintenance_risk ? 'bad' : 'good'}`}
+                            style={{ width: `${Math.min((alerts.risk_score || 0) * 100, 100)}%` }}
+                        />
+                    </div>
                  </div>
               </div>
           </div>
