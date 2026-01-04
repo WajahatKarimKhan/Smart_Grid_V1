@@ -15,7 +15,7 @@ DATABASE_URL = "postgresql://neondb_owner:npg_KiG3oYvEQaA2@ep-bold-feather-a1sew
 
 # Allow CORS for React Frontend
 origins = [
-    "http://localhost:5173",          
+    "http://localhost:5173",           
     "https://smartgridx.onrender.com" 
 ]
 
@@ -88,51 +88,51 @@ class DatabaseManager:
 
     async def create_table(self):
         """
-        Creates a WIDE table to store snapshots.
-        Columns are ordered: Pole Data -> House Data.
+        Creates the table 'smart_grid_data' to store snapshots.
+        Columns are renamed to grid_* (for pole) and home_* (for house).
         """
         query = """
-        CREATE TABLE IF NOT EXISTS grid_snapshots (
+        CREATE TABLE IF NOT EXISTS smart_grid_data (
             id SERIAL PRIMARY KEY,
             timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             trigger_source VARCHAR(20), -- Which device caused this update ('pole' or 'house')
             
-            -- POLE MODULE DATA (First, as requested)
-            pole_id VARCHAR(50),
-            pole_voltage REAL,
-            pole_current REAL,
-            pole_power REAL,
-            pole_energy REAL,
-            pole_frequency REAL,
-            pole_pf REAL,
+            -- GRID / POLE MODULE DATA
+            grid_id VARCHAR(50),
+            grid_voltage REAL,
+            grid_current REAL,
+            grid_power REAL,
+            grid_energy REAL,
+            grid_frequency REAL,
+            grid_pf REAL,
             
-            -- INDOOR/HOUSE MODULE DATA (Second)
-            house_id VARCHAR(50),
-            house_voltage REAL,
-            house_current REAL,
-            house_power REAL,
-            house_energy REAL,
-            house_frequency REAL,
-            house_pf REAL,
-            house_temperature REAL
+            -- HOME / INDOOR MODULE DATA
+            home_id VARCHAR(50),
+            home_voltage REAL,
+            home_current REAL,
+            home_power REAL,
+            home_energy REAL,
+            home_frequency REAL,
+            home_pf REAL,
+            home_temperature REAL
         );
         """
         async with self.pool.acquire() as connection:
             await connection.execute(query)
-            logger.info("Table 'grid_snapshots' checked/created.")
+            logger.info("Table 'smart_grid_data' checked/created.")
 
     async def save_snapshot(self, source: str):
         """
-        Saves the CURRENT global state of both Pole and House into one row.
+        Saves the CURRENT global state of both Pole (Grid) and House (Home) into one row.
         """
         if not self.pool:
             return
 
         query = """
-        INSERT INTO grid_snapshots (
+        INSERT INTO smart_grid_data (
             trigger_source,
-            pole_id, pole_voltage, pole_current, pole_power, pole_energy, pole_frequency, pole_pf,
-            house_id, house_voltage, house_current, house_power, house_energy, house_frequency, house_pf, house_temperature
+            grid_id, grid_voltage, grid_current, grid_power, grid_energy, grid_frequency, grid_pf,
+            home_id, home_voltage, home_current, home_power, home_energy, home_frequency, home_pf, home_temperature
         ) VALUES (
             $1,
             $2, $3, $4, $5, $6, $7, $8,
@@ -149,12 +149,12 @@ class DatabaseManager:
                 await connection.execute(
                     query,
                     source,
-                    # Pole Values
+                    # Grid / Pole Values
                     pole.get("node_id"), pole["voltage"], pole["current"], pole["power"], pole["energy"], pole["frequency"], pole["pf"],
-                    # House Values
+                    # Home / House Values
                     house.get("node_id"), house["voltage"], house["current"], house["power"], house["energy"], house["frequency"], house["pf"], house["temperature"]
                 )
-                logger.info(f"Snapshot saved. Trigger: {source}")
+                logger.info(f"Snapshot saved to smart_grid_data. Trigger: {source}")
         except Exception as e:
             logger.error(f"Failed to insert snapshot: {e}")
 
