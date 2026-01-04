@@ -90,6 +90,7 @@ class DatabaseManager:
         """
         Creates the table 'smart_grid_data' to store snapshots.
         Columns are renamed to grid_* (for pole) and home_* (for house).
+        UPDATED: Added columns for Risk Score and Alerts.
         """
         query = """
         CREATE TABLE IF NOT EXISTS smart_grid_data (
@@ -114,7 +115,12 @@ class DatabaseManager:
             home_energy REAL,
             home_frequency REAL,
             home_pf REAL,
-            home_temperature REAL
+            home_temperature REAL,
+            
+            -- AI & ALERTS DATA
+            risk_score REAL,
+            alert_theft BOOLEAN,
+            alert_maintenance BOOLEAN
         );
         """
         async with self.pool.acquire() as connection:
@@ -124,6 +130,7 @@ class DatabaseManager:
     async def save_snapshot(self, source: str):
         """
         Saves the CURRENT global state of both Pole (Grid) and House (Home) into one row.
+        Includes AI predictions and Alert status.
         """
         if not self.pool:
             return
@@ -132,17 +139,20 @@ class DatabaseManager:
         INSERT INTO smart_grid_data (
             trigger_source,
             grid_id, grid_voltage, grid_current, grid_power, grid_energy, grid_frequency, grid_pf,
-            home_id, home_voltage, home_current, home_power, home_energy, home_frequency, home_pf, home_temperature
+            home_id, home_voltage, home_current, home_power, home_energy, home_frequency, home_pf, home_temperature,
+            risk_score, alert_theft, alert_maintenance
         ) VALUES (
             $1,
             $2, $3, $4, $5, $6, $7, $8,
-            $9, $10, $11, $12, $13, $14, $15, $16
+            $9, $10, $11, $12, $13, $14, $15, $16,
+            $17, $18, $19
         )
         """
         
         # Get latest data from memory
         pole = system_state["pole"]
         house = system_state["house"]
+        alerts = system_state["alerts"]
 
         try:
             async with self.pool.acquire() as connection:
@@ -152,7 +162,9 @@ class DatabaseManager:
                     # Grid / Pole Values
                     pole.get("node_id"), pole["voltage"], pole["current"], pole["power"], pole["energy"], pole["frequency"], pole["pf"],
                     # Home / House Values
-                    house.get("node_id"), house["voltage"], house["current"], house["power"], house["energy"], house["frequency"], house["pf"], house["temperature"]
+                    house.get("node_id"), house["voltage"], house["current"], house["power"], house["energy"], house["frequency"], house["pf"], house["temperature"],
+                    # AI / Alerts Values
+                    alerts["risk_score"], alerts["theft_detected"], alerts["maintenance_risk"]
                 )
                 logger.info(f"Snapshot saved to smart_grid_data. Trigger: {source}")
         except Exception as e:
@@ -289,6 +301,7 @@ async def websocket_hardware(websocket: WebSocket, device_type: str):
             
             # --- SAVE SNAPSHOT TO DATABASE ---
             # This inserts ONE row containing BOTH Pole and House data
+            # Now includes Alert State and Risk Score
             asyncio.create_task(db_manager.save_snapshot(device_type))
 
             update_system_logic()
