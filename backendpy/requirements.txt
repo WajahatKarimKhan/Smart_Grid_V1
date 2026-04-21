@@ -1,4 +1,9 @@
 fastapi
-uvicorn[standard]
+uvicorn
 websockets
-asyncpg
+opencv-python-headless
+face_recognition
+psycopg2-binary
+numpy
+pytz
+python-multipart
