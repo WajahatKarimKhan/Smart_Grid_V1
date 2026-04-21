@@ -81,7 +81,7 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>AEGis <span>Security Monitor</span></h1>
+        <h1>R38 <span>Security Monitor</span></h1>
       </header>
 
       <div className="dashboard-grid">
