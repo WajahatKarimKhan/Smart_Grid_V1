@@ -1,9 +1,3 @@
 fastapi
 uvicorn
 websockets
-opencv-python-headless
-face_recognition
-psycopg2-binary
-numpy
-pytz
-python-multipart
