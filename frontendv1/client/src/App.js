@@ -47,18 +47,20 @@ function App() {
     return new Blob([byteArray], { type });
   };
 
+  const [isRegistering, setIsRegistering] = useState(false);
+
   const handleRegister = async () => {
-    if (!regName.trim() || !frameData) {
-      setRegStatus({ message: 'Error: Name and active camera feed required.', type: 'error' });
+    if (!regName.trim()) {
+      setRegStatus({ message: 'Error: Subject Name required.', type: 'error' });
       return;
     }
 
-    setRegStatus({ message: 'Encrypting and Uploading...', type: 'info' });
+    setIsRegistering(true);
+    setRegStatus({ message: 'Initializing Flash & Scanning...', type: 'info' });
 
-    const currentFrameBlob = base64ToBlob(frameData);
+    // We no longer send the file! The backend grabs it directly.
     const formData = new FormData();
     formData.append('name', regName);
-    formData.append('file', currentFrameBlob, 'frame.jpg');
 
     try {
       const response = await fetch(`${BACKEND_HTTP}/register`, {
@@ -75,6 +77,8 @@ function App() {
       }
     } catch (error) {
       setRegStatus({ message: 'Network error communicating with mainframe.', type: 'error' });
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -114,8 +118,13 @@ function App() {
               onChange={(e) => setRegName(e.target.value)}
               className="lux-input"
             />
-            <button onClick={handleRegister} className="lux-button">
-              Register Biometrics
+            <button 
+              onClick={handleRegister} 
+              className="lux-button" 
+              disabled={isRegistering}
+              style={{ opacity: isRegistering ? 0.5 : 1, cursor: isRegistering ? 'not-allowed' : 'pointer' }}
+            >
+              {isRegistering ? 'Processing...' : 'Register Biometrics'}
             </button>
             {regStatus.message && (
               <p className={`status-text ${regStatus.type}`}>
