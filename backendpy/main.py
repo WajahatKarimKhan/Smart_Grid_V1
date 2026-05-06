@@ -196,7 +196,7 @@ async def register_face(name: str = Form(...)):
 
     try:
         # 1. Turn on Flash LED
-        await camera_ws.send_text("LED_ON")
+        #await camera_ws.send_text("LED_ON")
         
         # 2. Wait 1 second for the camera exposure to adjust to the light
         await asyncio.sleep(1.0)
