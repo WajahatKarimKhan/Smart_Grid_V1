@@ -9,6 +9,8 @@ function App() {
   const [alerts, setAlerts] = useState([]);
   const [regName, setRegName] = useState('');
   const [regStatus, setRegStatus] = useState({ message: '', type: '' });
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   
   const wsRef = useRef(null);
 
@@ -36,18 +38,25 @@ function App() {
     };
   }, []);
 
-  // Helper function to convert Base64 to Blob for uploading
-  const base64ToBlob = (base64, type = 'image/jpeg') => {
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
+  // --- NEW: SD CARD CAMERA CONTROLS ---
+  const triggerCameraAction = async (action) => {
+    try {
+      const response = await fetch(`${BACKEND_HTTP}/camera/${action}`, { 
+        method: 'POST' 
+      });
+      const result = await response.json();
+      
+      if (result.status === 'command_sent') {
+        if (action === 'start-video') setIsRecording(true);
+        if (action === 'stop-video') setIsRecording(false);
+        console.log(`Action ${action} successful`);
+      } else {
+        alert("Camera Error: " + result.message);
+      }
+    } catch (error) {
+      alert("Network error communicating with camera via backend.");
     }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type });
   };
-
-  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleRegister = async () => {
     if (!regName.trim()) {
@@ -58,7 +67,6 @@ function App() {
     setIsRegistering(true);
     setRegStatus({ message: 'Initializing Flash & Scanning...', type: 'info' });
 
-    // We no longer send the file! The backend grabs it directly.
     const formData = new FormData();
     formData.append('name', regName);
 
@@ -93,13 +101,52 @@ function App() {
         <div className="card video-card">
           <div className="card-header">
             <h2>Live Surveillance</h2>
-            <span className="live-indicator">● LIVE</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {isRecording && <span className="recording-indicator" style={{ color: '#ff4444', fontSize: '0.8rem', fontWeight: 'bold' }}>● REC</span>}
+              <span className="live-indicator">● LIVE</span>
+            </div>
           </div>
+          
           <div className="video-wrapper">
             {frameData ? (
               <img src={`data:image/jpeg;base64,${frameData}`} alt="Live Feed" />
             ) : (
               <div className="video-placeholder">Establishing secure connection...</div>
+            )}
+          </div>
+
+          {/* NEW: SD CARD CONTROL PANEL */}
+          <div className="control-panel" style={{ 
+            padding: '15px', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: '10px',
+            borderTop: '1px solid #333'
+          }}>
+            <button 
+              onClick={() => triggerCameraAction('photo')}
+              className="lux-button small"
+              style={{ flex: 1, backgroundColor: '#222', borderColor: '#E2B13C' }}
+            >
+              📸 PHOTO
+            </button>
+
+            {!isRecording ? (
+              <button 
+                onClick={() => triggerCameraAction('start-video')}
+                className="lux-button small"
+                style={{ flex: 1, backgroundColor: '#440000', color: '#fff', borderColor: '#ff0000' }}
+              >
+                🔴 START VIDEO
+              </button>
+            ) : (
+              <button 
+                onClick={() => triggerCameraAction('stop-video')}
+                className="lux-button small"
+                style={{ flex: 1, backgroundColor: '#fff', color: '#000', fontWeight: 'bold' }}
+              >
+                ⏹️ STOP VIDEO
+              </button>
             )}
           </div>
         </div>
