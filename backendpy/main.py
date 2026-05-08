@@ -215,6 +215,27 @@ async def register_face(name: str = Form(...)):
         if camera_ws:
             await camera_ws.send_text("LED_OFF")
         return {"status": "error", "message": "Processing failed."}
+# --- Add these to your existing main.py ---
 
+@app.post("/camera/photo")
+async def capture_photo():
+    if camera_ws:
+        await camera_ws.send_text("TAKE_PHOTO")
+        return {"status": "command_sent", "action": "photo"}
+    return {"status": "error", "message": "Camera offline"}
+
+@app.post("/camera/start-video")
+async def start_video():
+    if camera_ws:
+        await camera_ws.send_text("START_VIDEO")
+        return {"status": "command_sent", "action": "recording_started"}
+    return {"status": "error", "message": "Camera offline"}
+
+@app.post("/camera/stop-video")
+async def stop_video():
+    if camera_ws:
+        await camera_ws.send_text("STOP_VIDEO")
+        return {"status": "command_sent", "action": "recording_stopped"}
+    return {"status": "error", "message": "Camera offline"}
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
